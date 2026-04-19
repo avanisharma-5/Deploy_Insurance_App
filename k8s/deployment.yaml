@@ -25,5 +25,13 @@ spec:
       containers:
       - name: insurance-container
         image: avanis55/insurance-app:latest
+
         ports:
         - containerPort: 8501
+
+        env:
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: groq-secret
+              key: GROQ_API_KEY
