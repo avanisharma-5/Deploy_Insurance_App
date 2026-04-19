@@ -25,6 +25,7 @@ spec:
       containers:
       - name: insurance-container
         image: avanis55/insurance-app:latest
+        imagePullPolicy: Always
 
         ports:
         - containerPort: 8501
