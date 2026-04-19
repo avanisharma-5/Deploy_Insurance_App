@@ -15,6 +15,7 @@ st.set_page_config(page_title="Insurance System", page_icon="💬")
 st.title("💬 Insurance Assistant v1")
 st.write("Ask anything about insurance policies, claims, coverage, etc.")
 st.write("this is new version!")
+st.write("new feature")
 st.divider()
 
 # ---------------------------
