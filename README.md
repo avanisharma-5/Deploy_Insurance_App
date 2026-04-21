@@ -1,14 +1,13 @@
 # Deploy Insurance App to Kubernetes
 
-A complete DevOps implementation for containerizing and deploying an Insurance Application onto a Kubernetes cluster (Minikube) using Docker, GitHub Actions / Jenkins CI/CD, and zero-downtime Rolling Updates.
+A complete DevOps implementation for containerizing and deploying an Insurance Application onto a Kubernetes cluster (Minikube) using Docker, GitHub Actions- CI/CD.
 
 ---
 
 ## Project Overview
 
-This project takes an Insurance Application and deploys it to a production-ready Kubernetes environment. The deployment is fully automated — a single `git push` triggers the entire build, push, and deploy pipeline with no manual steps required.
+This project takes an Insurance Application and deploys it to a production-ready Kubernetes environment. The deployment is fully automated — a single `git push` triggers the entire build, push, and deploy pipeline.
 
-The key feature is **zero-downtime Rolling Updates**. When a new version is deployed, Kubernetes replaces pods gradually, ensuring the application stays available throughout the entire update process. Kubernetes also self-heals the system automatically — if a pod crashes, it is restarted without any human intervention.
 
 ---
 
@@ -20,7 +19,6 @@ The key feature is **zero-downtime Rolling Updates**. When a new version is depl
 - Deployed on Kubernetes (Minikube) with self-healing pod management
 - Kubernetes Service exposes the application through a stable external endpoint
 - All credentials managed via CI/CD secrets — nothing stored in code or images
-- RBAC enforced on the cluster for secure resource access control
 - Docker layer caching for faster repeated builds in the pipeline
 
 ---
@@ -32,7 +30,7 @@ The key feature is **zero-downtime Rolling Updates**. When a new version is depl
 | Application | Insurance Web Application |
 | Containerization | Docker, Docker Hub |
 | Orchestration | Kubernetes (Minikube) |
-| CI/CD | GitHub Actions / Jenkins |
+| CI/CD | GitHub Actions |
 | Version Control | Git, GitHub |
 | Cluster Management | kubectl, Minikube CLI |
 
@@ -61,15 +59,13 @@ Deploy-Insurance-App-to-Kubernetes/
 ## System Architecture
 
 ```
-Developer  →  GitHub Repository  →  CI/CD Pipeline (Jenkins / GitHub Actions)
+Developer  →  GitHub Repository  →  CI/CD Pipeline ( GitHub Actions)
                                               ↓
                                     Build Docker Image
                                               ↓
                                     Push to Docker Hub
                                               ↓
                                Kubernetes Cluster (Minikube)
-                                              ↓
-                                    Rolling Update Strategy
                                               ↓
                            Insurance App Pods  →  K8s Service  →  End User
 ```
@@ -95,7 +91,7 @@ cd Deploy-Insurance-App-to-Kubernetes
 
 **Step 2 — Start Minikube**
 ```bash
-minikube start
+minikube start --driver=docker
 kubectl get nodes
 ```
 
@@ -172,13 +168,7 @@ Stage 6 — Verify
 
 ---
 
-## Zero-Downtime Rolling Update
 
-The deployment is configured with `replicas: 2`, `maxSurge: 1`, and `maxUnavailable: 0`. This means Kubernetes always spins up a new pod and waits for it to become healthy before terminating an old one. Users experience no downtime during any deployment. If a new deployment fails, rollback is instant:
-
-```bash
-kubectl rollout undo deployment/insurance-app
-```
 
 Docker image versioning on Docker Hub ensures every previous version remains available for rollback.
 
@@ -188,8 +178,7 @@ Docker image versioning on Docker Hub ensures every previous version remains ava
 
 | Consideration | Implementation |
 |---|---|
-| High Availability | Multiple pod replicas run simultaneously; one failure does not bring down the app |
-| Zero Downtime | Rolling Updates replace pods incrementally with no service interruption |
+
 | Scalability | Replica count is adjustable; architecture supports HPA in future iterations |
 | Reliability | Kubernetes self-healing auto-restarts crashed pods |
 | Portability | Docker ensures consistent runtime across dev, test, and production environments |
