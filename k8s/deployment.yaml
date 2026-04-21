@@ -4,7 +4,13 @@ metadata:
   name: insurance-app
 
 spec:
-  replicas: 1
+  replicas: 2
+
+  strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 0
 
   selector:
     matchLabels:
