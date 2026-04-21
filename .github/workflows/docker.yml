@@ -5,16 +5,18 @@ on:
     branches: ["main"]
 
 jobs:
-  ci-cd:
+
+  # -----------------------------
+  # 1. TEST STAGE
+  # -----------------------------
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Setup Python + TEST
-    - name: Set up Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
@@ -25,54 +27,65 @@ jobs:
     - name: Syntax Check
       run: python -m py_compile app.py
 
-    # 3. Login to Docker Hub
+  # -----------------------------
+  # 2. BUILD & PUSH STAGE
+  # -----------------------------
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # 4. Build Docker Image (ONLY latest)
     - name: Build Docker Image
       run: docker build -t avanis55/insurance-app:latest .
 
-    # 5. Push Docker Image
     - name: Push Docker Image
       run: docker push avanis55/insurance-app:latest
 
-    # 6. Ensure Minikube is running
-    - name: Ensure Minikube is running
+  # -----------------------------
+  # 3. DEPLOY STAGE
+  # -----------------------------
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Deploy to EC2 Minikube
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+
+          # Ensure Minikube is running
           if ! minikube status | grep -q "Running"; then
             minikube start --driver=docker
           fi
 
-    # 7. Create/Update Kubernetes Secret
-    - name: Create/Update K8s Secret
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
+          # Update Secret
           kubectl delete secret groq-secret --ignore-not-found
           kubectl create secret generic groq-secret \
             --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
 
-    # 8. Deploy to Kubernetes (force latest)
-    - name: Deploy to Kubernetes
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          kubectl set image deployment/insurance-app \
-          insurance-container=avanis55/insurance-app:latest
+          # Apply manifests (important!)
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
 
-          kubectl rollout status deployment/insurance-app --timeout=120s || true
+          # Force new image pull
+          kubectl rollout restart deployment/insurance-app
+
+          # Wait for rollout
+          kubectl rollout status deployment/insurance-app --timeout=180s
+
+          # Debug info
+          kubectl get pods
+          kubectl get services
