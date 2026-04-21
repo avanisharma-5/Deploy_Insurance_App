@@ -4,13 +4,7 @@ metadata:
   name: insurance-app
 
 spec:
-  replicas: 2
-
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+  replicas: 1
 
   selector:
     matchLabels:
@@ -24,7 +18,7 @@ spec:
     spec:
       containers:
       - name: insurance-container
-        image: avanis55/insurance-app:v1
+        image: avanis55/insurance-app:latest
         imagePullPolicy: Always
 
         ports:
