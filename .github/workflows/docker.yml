@@ -9,15 +9,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ─────────────────────────────
     # 1. Checkout Code
-    # ─────────────────────────────
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # ─────────────────────────────
     # 2. Setup Python + TEST
-    # ─────────────────────────────
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -29,40 +25,42 @@ jobs:
     - name: Syntax Check
       run: python -m py_compile app.py
 
-    # ─────────────────────────────
     # 3. Set Version Tag
-    # ─────────────────────────────
     - name: Set Version Tag
       run: echo "TAG=v1.${{ github.run_number }}" >> $GITHUB_ENV
 
-    # ─────────────────────────────
     # 4. Login to Docker Hub
-    # ─────────────────────────────
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # ─────────────────────────────
     # 5. Build Docker Image
-    # ─────────────────────────────
     - name: Build Docker Image
       run: |
         docker build -t avanis55/insurance-app:${{ env.TAG }} \
                      -t avanis55/insurance-app:latest .
 
-    # ─────────────────────────────
     # 6. Push Docker Images
-    # ─────────────────────────────
     - name: Push Docker Images
       run: |
         docker push avanis55/insurance-app:${{ env.TAG }}
         docker push avanis55/insurance-app:latest
 
-    # ─────────────────────────────
-    # 7. Create/Update Kubernetes Secret
-    # ─────────────────────────────
+    # 7. Ensure Minikube is running (MUST COME FIRST)
+    - name: Ensure Minikube is running
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          if ! minikube status | grep -q "Running"; then
+            minikube start --driver=docker
+          fi
+
+    # 8. Create/Update Kubernetes Secret
     - name: Create/Update K8s Secret
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -74,9 +72,7 @@ jobs:
           kubectl create secret generic groq-secret \
             --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
 
-    # ─────────────────────────────
-    # 8. Deploy to Kubernetes
-    # ─────────────────────────────
+    # 9. Deploy to Kubernetes
     - name: Deploy to Kubernetes
       uses: appleboy/ssh-action@v1.0.3
       with:
