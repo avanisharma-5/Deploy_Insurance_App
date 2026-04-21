@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: insurance-container
-        image: avanis55/insurance-app:latest
+        image: avanis55/insurance-app:v1
         imagePullPolicy: Always
 
         ports:
